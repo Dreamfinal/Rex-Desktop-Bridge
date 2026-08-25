@@ -134,15 +134,19 @@ function New-BridgeShortcut {
     $desktop = [Environment]::GetFolderPath('Desktop')
     $shortcutPath = Join-Path $desktop 'Rex Desktop Bridge.lnk'
     $appDir = Join-Path $RepoRoot 'app'
-    $pythonw = Join-Path $appDir '.venv\Scripts\pythonw.exe'
-    if (-not (Test-Path $pythonw)) { throw "Bridge pythonw runtime missing: $pythonw" }
+    $venvPython = Join-Path $appDir '.venv\Scripts\python.exe'
+    if (-not (Test-Path $venvPython)) { throw "Bridge Python runtime missing: $venvPython" }
+    $basePython = (& $venvPython -c 'import sys; print(sys._base_executable)').Trim()
+    if (-not (Test-Path $basePython)) { throw "Bridge base Python runtime missing: $basePython" }
+    $pythonw = Join-Path (Split-Path $basePython -Parent) 'pythonw.exe'
+    if (-not (Test-Path $pythonw)) { throw "Bridge base pythonw runtime missing: $pythonw" }
     $ws = New-Object -ComObject WScript.Shell
     $shortcut = $ws.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $pythonw
     $shortcut.Arguments = '-m bridge.gui'
     $shortcut.WorkingDirectory = $appDir
     $shortcut.WindowStyle = 1
-    $shortcut.Description = 'Rex Desktop Bridge GUI control center. Opens three visible tunnel terminals when configured.'
+    $shortcut.Description = 'Rex Desktop Bridge GUI control center. Runs three tunnels headlessly; terminal logs open on demand.'
     $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,167"
     $shortcut.Save()
     Write-Host "Shortcut: $shortcutPath" -ForegroundColor Green

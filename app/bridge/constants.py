@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 APP_NAME = "Rex Desktop Bridge"
-APP_VERSION = "0.1.2-prototype"
+APP_VERSION = "0.1.3-prototype"
 RUNTIME_DIR_NAME = "Rex-Desktop-Bridge"
 CONTROL_PLANE_BASE_URL = "https://api.openai.com"
 OPENAI_API_KEYS_URL = "https://platform.openai.com/settings/organization/api-keys"
@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_ROOT = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / RUNTIME_DIR_NAME
 STATE_ROOT = RUNTIME_ROOT / "state"
 ACTIVITY_ROOT = RUNTIME_ROOT / "activity"
+LOG_ROOT = RUNTIME_ROOT / "logs"
 CONFIG_PATH = RUNTIME_ROOT / "config.json"
 SECRETS_PATH = RUNTIME_ROOT / "secrets.json"
 PROFILE_ROOT = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / "tunnel-client"
@@ -72,5 +73,5 @@ WORKERS = (
 
 WORKER_BY_KEY = {worker.key: worker for worker in WORKERS}
 
-for directory in (RUNTIME_ROOT, STATE_ROOT, ACTIVITY_ROOT, PROFILE_ROOT):
+for directory in (RUNTIME_ROOT, STATE_ROOT, ACTIVITY_ROOT, LOG_ROOT, PROFILE_ROOT):
     directory.mkdir(parents=True, exist_ok=True)

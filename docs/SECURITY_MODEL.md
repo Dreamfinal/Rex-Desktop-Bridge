@@ -13,6 +13,6 @@ Key product invariants:
 - Runtime key injected only into tunnel process environments;
 - optional Admin key used only for management operations;
 - separate `rex-serena`, `rex-rdc`, and `rex-desktop` profiles;
-- visible foreground terminal supervisors in the prototype;
+- GUI-owned headless tunnel supervisors with optional user-opened live-log terminals;
 - local-only task activity telemetry;
 - no Windows Service, Task Scheduler autostart, or hidden daemon.

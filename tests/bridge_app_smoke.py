@@ -6,10 +6,11 @@ import tempfile
 from pathlib import Path
 
 from bridge.activity import clear_activity_logs, format_local_time
-from bridge.constants import CONFIG_PATH, PROFILE_ROOT, ROOT, SECRETS_PATH, WORKERS
+from bridge.constants import CONFIG_PATH, LOG_ROOT, PROFILE_ROOT, ROOT, SECRETS_PATH, WORKERS
 from bridge.credentials import CredentialStore
 import bridge.activity as activity
 from bridge.help_text import HELP_TEXT
+from bridge.processes import clear_tunnel_logs
 
 
 REAL_TUNNEL_ID = re.compile(r"tunnel_[A-Za-z0-9]{16,}")
@@ -59,10 +60,14 @@ def test_activity_helpers() -> None:
         (root / "rdc.jsonl").write_text("test\n", encoding="utf-8")
         clear_activity_logs(root)
         assert not list(root.iterdir())
+
+        tunnel_root = root / "tunnel-logs"
+        clear_tunnel_logs(tunnel_root)
+        assert sorted(path.name for path in tunnel_root.iterdir()) == ["desktop.log", "rdc.log", "serena.log"]
+        assert all(path.read_text(encoding="utf-8") == "" for path in tunnel_root.iterdir())
     finally:
-        for child in root.iterdir():
-            child.unlink(missing_ok=True)
-        root.rmdir()
+        import shutil
+        shutil.rmtree(root, ignore_errors=True)
 
 
 def test_retry_noise_filter() -> None:
@@ -109,6 +114,7 @@ def main() -> None:
     assert CONFIG_PATH.is_absolute() and ROOT not in CONFIG_PATH.parents
     assert SECRETS_PATH.is_absolute() and ROOT not in SECRETS_PATH.parents
     assert PROFILE_ROOT.is_absolute() and ROOT not in PROFILE_ROOT.parents
+    assert LOG_ROOT.is_absolute() and ROOT not in LOG_ROOT.parents
     assert "Runtime API Key" in HELP_TEXT
     assert "Admin API Key" in HELP_TEXT
     assert "Tunnel ID" in HELP_TEXT
@@ -117,10 +123,17 @@ def main() -> None:
     assert "--enable-gui-log-window false" in serena_launcher
     assert "--open-web-dashboard false" in serena_launcher
     setup_text = (ROOT / "setup.ps1").read_text(encoding="utf-8")
-    assert "pythonw.exe" in setup_text
+    assert "sys._base_executable" in setup_text
+    assert "Bridge base pythonw runtime missing" in setup_text
     gui_text = (ROOT / "app" / "bridge" / "gui.py").read_text(encoding="utf-8")
     assert "Clear Logs" in gui_text
     assert "Current: idle" in gui_text
+    assert "Show Terminal" in gui_text
+    assert "Tunnels run headless by default" in gui_text
+    processes_text = (ROOT / "app" / "bridge" / "processes.py").read_text(encoding="utf-8")
+    assert "CREATE_NO_WINDOW" in processes_text
+    assert "stdout=subprocess.PIPE" in processes_text
+    assert "Get-Content -LiteralPath" in processes_text
     assert "format_local_time" in gui_text
     json.loads((ROOT / "versions.json").read_text(encoding="utf-8"))
     test_dpapi()

@@ -6,7 +6,7 @@
 - **RDC (OS/CLI)** — filesystem, shell, process, and operating-system work.
 - **Rex Desktop (GUI + Vision)** — screenshots, Windows UI Automation, mouse, keyboard, window control, and visual workflows.
 
-The prototype deliberately keeps **three tunnels and three visible terminal windows**. The GUI starts/stops them together, but each tunnel remains an independent process/failure domain.
+The prototype deliberately keeps **three independent tunnels**, but their supervisors run headlessly by default. The GUI starts/stops them together, and `Show Terminal` opens a live log viewer only when needed.
 
 ## What the GUI shows
 
@@ -30,7 +30,7 @@ The top of the GUI manages:
 - Organization/Workspace scope used when creating tunnels;
 - beginner Help with direct OpenAI links;
 - automatic or manual Tunnel ID setup;
-- `Clear Logs`, which clears task/activity history only and preserves configuration, credentials, Tunnel IDs, and profiles.
+- `Clear Logs`, which clears task/activity history and tunnel output logs while preserving configuration, credentials, Tunnel IDs, and profiles.
 
 ## Distribution safety
 
@@ -73,7 +73,7 @@ cd "$env:USERPROFILE\Documents\AI_Workspace\MCP\Rex-Desktop-Bridge"
 3. installs the pinned RDC/Desktop Commander runtime and applies guarded config-isolation and MCP-UI-suppression patches;
 4. installs the pinned Rex Desktop Worker Python environment;
 5. installs the lightweight Tk GUI environment;
-6. creates a **Rex Desktop Bridge** Desktop shortcut that launches the GUI directly through `pythonw.exe` (no extra bootstrap-console taskbar icon);
+6. creates a **Rex Desktop Bridge** Desktop shortcut that resolves the underlying base `pythonw.exe` instead of the uv virtualenv shim (no extra bootstrap-console taskbar icon);
 7. runs local smoke tests.
 
 Setup does **not** ask for an API key or Tunnel ID. Those are per-user values and are handled by the GUI after setup.
@@ -88,7 +88,7 @@ A fresh user sees missing configuration in red. The app guides the user through:
 2. **Admin API Key** — only if the user wants the app to create missing tunnels automatically.
 3. **Organization ID / Workspace ID** — scope required by tunnel creation.
 4. **Create Missing Tunnels** — creates separate Serena/RDC/Desktop tunnels, or the user can create tunnels manually and paste each `tunnel_...` ID.
-5. Once configured, the GUI opens one visible terminal for each tunnel.
+5. Once configured, the GUI starts all three tunnels headlessly; use `Show Terminal` on a worker card to inspect its live log.
 6. In ChatGPT Apps/Connectors, bind the matching app to its tunnel and scan MCP tools.
 
 Use the built-in **Beginner Help** button at any point. It includes direct links to OpenAI API Keys, Admin Keys, Organization Settings, Tunnel Settings, Secure MCP Tunnel documentation, and ChatGPT Apps/Connectors.
@@ -146,9 +146,9 @@ Tool arguments and API credentials are not intentionally logged by the activity 
 - No API key passed as a command-line argument.
 - DPAPI encryption is scoped to the current Windows user.
 - Three distinct `channel=main` tunnel profiles.
-- Visible foreground terminal supervisors in the prototype.
+- GUI-owned headless tunnel supervisors by default, with optional visible live-log terminals on demand.
 - No Windows Service, Task Scheduler autostart, hidden tray daemon, or background resurrection.
-- Closing the GUI stops the terminal supervisors it started.
+- Closing the GUI stops all headless tunnel supervisors and any live-log terminals it started.
 
 See `docs/SECURITY.md`.
 

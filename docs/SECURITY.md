@@ -63,7 +63,7 @@ This prevents one tunnel/process failure from necessarily removing every local c
 Prototype behavior is intentionally visible:
 
 - one GUI;
-- up to three visible PowerShell tunnel terminals;
+- three GUI-owned headless tunnel supervisors, plus optional user-opened PowerShell live-log terminals;
 - no Windows Service;
 - no scheduled-task autostart;
 - no hidden tray daemon;

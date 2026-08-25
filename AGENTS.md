@@ -25,7 +25,7 @@ It combines three independent MCP capabilities behind one user-facing GUI while 
 - Admin API keys are optional and used only for tunnel-management operations such as creating missing tunnels. Do not require an Admin key for normal runtime use.
 - Do not place secrets in command-line arguments, logs, YAML, Git, screenshots, or task telemetry.
 - Preserve three independent tunnel profiles. Do not collapse all workers into one `channel=main` tunnel.
-- Preserve visible foreground behavior in the prototype: the GUI owns three visible terminal supervisors. No Windows Service, scheduled-task autostart, hidden tray daemon, or background resurrection.
+- Preserve GUI-owned process lifetime: the visible Rex Desktop Bridge GUI owns three headless tunnel supervisors, and optional terminal log viewers open only on explicit user request. No Windows Service, scheduled-task autostart, hidden tray daemon, or background resurrection.
 - Closing the GUI must stop terminal supervisors started by that GUI.
 - Keep Serena upstream code unmodified; wrapper changes belong in `serena/`.
 - Keep the RDC upstream patch fail-closed through `rdc/patches/apply-config-dir-patch.ps1`.

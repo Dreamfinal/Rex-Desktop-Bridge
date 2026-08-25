@@ -163,7 +163,7 @@ New product code under `app/` provides:
 - first-run/key/tunnel Help;
 - local tunnel configuration;
 - automatic/manual tunnel provisioning;
-- three visible terminal process ownership;
+- three GUI-owned headless tunnel supervisors with optional live-log terminal viewers;
 - tunnel health display;
 - per-worker activity counters and task lists;
 - transparent MCP activity proxy.

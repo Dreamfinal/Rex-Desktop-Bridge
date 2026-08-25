@@ -24,7 +24,7 @@ from .constants import (
 )
 from .credentials import ADMIN_KEY_NAME, RUNTIME_KEY_NAME, CredentialStore, read_legacy_user_environment
 from .help_text import HELP_TEXT
-from .processes import BridgeProcessManager
+from .processes import BridgeProcessManager, clear_tunnel_logs
 from .tunnels import create_missing_tunnels, delete_profile, ensure_profiles, probe_health, write_profile
 
 
@@ -178,6 +178,7 @@ class WorkerPanel(ttk.LabelFrame):
         ttk.Button(controls, text="Start", command=lambda: app.start_worker(worker_key)).pack(side="left")
         ttk.Button(controls, text="Restart", command=lambda: app.restart_worker(worker_key)).pack(side="left", padx=(4, 0))
         ttk.Button(controls, text="Stop", command=lambda: app.stop_worker(worker_key)).pack(side="left", padx=(4, 0))
+        ttk.Button(controls, text="Show Terminal", command=lambda: app.show_terminal(worker_key)).pack(side="left", padx=(4, 0))
         ttk.Button(controls, text="Set Tunnel ID", command=lambda: app.set_tunnel_id(worker_key)).pack(side="right")
 
         self.tree = ttk.Treeview(self, columns=("time", "tool", "status", "duration"), show="headings", height=14)
@@ -308,7 +309,7 @@ class BridgeApp(tk.Tk):
         self.global_status.pack(side="left", padx=(14, 0))
         ttk.Label(
             bridge_controls,
-            text="Prototype behavior: each started capability opens its own visible terminal window.",
+            text="Tunnels run headless by default; Show Terminal opens a live log viewer on demand.",
             foreground="#555",
         ).pack(side="right")
 
@@ -528,6 +529,12 @@ class BridgeApp(tk.Tk):
         except Exception as exc:
             messagebox.showerror("Stop failed", str(exc), parent=self)
 
+    def show_terminal(self, worker_key: str) -> None:
+        try:
+            self.processes.show_terminal(WORKER_BY_KEY[worker_key])
+        except Exception as exc:
+            messagebox.showerror("Could not open terminal", str(exc), parent=self)
+
     def start_all(self) -> None:
         runtime_key = self._runtime_key()
         if not runtime_key:
@@ -554,15 +561,16 @@ class BridgeApp(tk.Tk):
     def clear_logs(self) -> None:
         if not messagebox.askyesno(
             "Clear activity logs",
-            "Clear all task/activity history for all three workers?\n\nConfiguration, API keys, Tunnel IDs, and profiles will be preserved.",
+            "Clear all task/activity history and tunnel output logs for all three workers?\n\nConfiguration, API keys, Tunnel IDs, and profiles will be preserved.",
             parent=self,
         ):
             return
         try:
             clear_activity_logs()
+            clear_tunnel_logs()
             for panel in self.panels.values():
                 panel.clear_view()
-            self.global_status.configure(text="Activity logs cleared; configuration preserved.")
+            self.global_status.configure(text="Activity and tunnel logs cleared; configuration preserved.")
         except Exception as exc:
             messagebox.showerror("Clear logs failed", str(exc), parent=self)
 
@@ -604,7 +612,7 @@ class BridgeApp(tk.Tk):
                 data = snapshot(worker.key)
                 self.panels[worker.key].update_status(state, detail, tunnel_id, data)
             if running_count:
-                self.global_status.configure(text=f"Terminals running: {running_count}/3 · Ready: {ready_count}/3")
+                self.global_status.configure(text=f"Tunnels running: {running_count}/3 · Ready: {ready_count}/3")
             elif not self.busy:
                 self.global_status.configure(text="Bridge stopped")
         except Exception as exc:

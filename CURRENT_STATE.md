@@ -12,7 +12,7 @@ Recommended local checkout:
 
 ## Product version
 
-Prototype: `0.1.2`
+Prototype: `0.1.3`
 
 The code baseline was carried forward from the tested `RDC_Serena_Modify` recovery stack at commit `e2c344f`, then converted into a distribution-safe product repository. No user-specific Tunnel IDs, API keys, generated tunnel profiles, or runtime state are part of this repository.
 
@@ -31,7 +31,7 @@ The code baseline was carried forward from the tested `RDC_Serena_Modify` recove
      Task Stream      Task Stream    Task Stream
 ```
 
-Each tunnel is an independent foreground process tree. The GUI prototype opens one visible terminal per configured worker.
+Each tunnel is an independent GUI-owned headless process tree. Terminal log viewers are hidden by default and open only when the user clicks `Show Terminal`.
 
 ## Implemented
 
@@ -48,7 +48,7 @@ Each tunnel is an independent foreground process tree. The GUI prototype opens o
 - Existing-machine migration discovery can reuse legacy local Tunnel IDs without writing them to Git.
 - Automatic creation of missing tunnels through `tunnel-client admin tunnels create` when an Admin key and org/workspace scope are provided.
 - Manual Tunnel ID binding per worker.
-- Three visible PowerShell tunnel terminals, with automatic start once local configuration is complete.
+- Three headless tunnel supervisors start automatically once local configuration is complete; `Show Terminal` opens a live log viewer only on demand.
 - Runtime key passed to tunnel processes only through child environments.
 - Admin key passed to tunnel-management subprocesses only through environment, never command-line arguments.
 - Transparent MCP activity proxy around each worker.
@@ -111,10 +111,10 @@ See `versions.json` for exact pins. Current baseline includes:
 Prototype code and local smoke gates are complete. Stable release still requires a user-specific **live** acceptance outside Git:
 
 1. provision/configure all three real tunnels;
-2. open all three visible terminals from the GUI together;
+2. start all three headless tunnels from the GUI and verify each optional `Show Terminal` live-log viewer can open on demand;
 3. connect/scan all three matching ChatGPT apps;
 4. invoke at least one harmless tool through each live tunnel and confirm the three task streams increment independently;
 5. stop one live tunnel and confirm the other two remain reachable;
 6. close the GUI and confirm all GUI-owned terminal/tunnel process trees terminate.
 
-Until those live gates pass, version `0.1.2` remains a locally verified prototype rather than a stable release.
+Until those live gates pass, version `0.1.3` remains a locally verified prototype rather than a stable release.

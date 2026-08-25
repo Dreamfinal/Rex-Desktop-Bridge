@@ -68,7 +68,7 @@ A Tunnel ID identifies an endpoint. It is not a password/API key, but this proje
 
 ## 4. What happens when configuration is complete
 
-When the Runtime key and all three Tunnel IDs are configured, the prototype automatically opens three visible PowerShell terminals:
+When the Runtime key and all three Tunnel IDs are configured, the prototype automatically starts three headless tunnel supervisors. Each worker card has `Show Terminal` to open a visible PowerShell live-log viewer only when needed:
 
 ```text
 Serena (Code/Repo)          → rex-serena
