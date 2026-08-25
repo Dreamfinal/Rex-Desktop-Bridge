@@ -34,6 +34,19 @@ def main() -> None:
     assert captured["env_admin"] == "not-a-real-admin-key"
     assert "--organization-id" in args and "org_example" in args
     assert "--workspace-id" in args and "ws_example" in args
+
+    try:
+        tunnels.create_tunnel(
+            WORKERS[0],
+            admin_key="not-a-real-admin-key",
+            organization_ids=["org_example"],
+            workspace_ids=[],
+        )
+    except ValueError as exc:
+        assert "Workspace ID" in str(exc)
+    else:
+        raise AssertionError("ChatGPT workspace scope was not required")
+
     print("TUNNEL_PROVISIONING_INTERFACE_SMOKE_OK")
 
 

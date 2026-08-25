@@ -161,7 +161,7 @@ class WorkerPanel(ttk.LabelFrame):
         super().__init__(parent, text=self.worker.label, padding=10)
         self.app = app
 
-        self.status_dot = tk.Label(self, text="â—", fg=STATUS_COLORS["gray"], font=("Segoe UI", 15, "bold"))
+        self.status_dot = tk.Label(self, text="●", fg=STATUS_COLORS["gray"], font=("Segoe UI", 15, "bold"))
         self.status_dot.grid(row=0, column=0, sticky="w")
         self.status_text = ttk.Label(self, text="Stopped")
         self.status_text.grid(row=0, column=1, columnspan=2, sticky="w", padx=(4, 0))
@@ -197,7 +197,8 @@ class WorkerPanel(ttk.LabelFrame):
 
     def update_status(self, state: str, detail: str, tunnel_id: str, snapshot_data) -> None:
         self.status_dot.configure(fg=STATUS_COLORS.get(state, STATUS_COLORS["gray"]))
-        self.status_text.configure(text=detail)
+        connector_state = "READY" if state == "green" else "BLOCKED"
+        self.status_text.configure(text=f"{detail} | ChatGPT {connector_state}")
         if tunnel_id:
             rendered = tunnel_id if len(tunnel_id) <= 32 else tunnel_id[:18] + "…" + tunnel_id[-8:]
             self.tunnel_text.configure(text=f"Tunnel: {rendered}")
@@ -413,9 +414,14 @@ class BridgeApp(tk.Tk):
             admin_key = self._admin_key()
             if not admin_key:
                 return
-        if not self.config_store.organization_ids() and not self.config_store.workspace_ids():
+        if not self.config_store.workspace_ids():
             self.edit_scope()
-            if not self.config_store.organization_ids() and not self.config_store.workspace_ids():
+            if not self.config_store.workspace_ids():
+                messagebox.showerror(
+                    "ChatGPT workspace required",
+                    "Automatic tunnel creation for ChatGPT requires the target ChatGPT Workspace ID. Open Beginner Help for the required order and setup links.",
+                    parent=self,
+                )
                 return
         if not TUNNEL_CLIENT.exists():
             messagebox.showerror("Setup required", "tunnel-client.exe is not installed yet. Run Setup-All.cmd first.", parent=self)

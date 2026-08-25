@@ -120,8 +120,8 @@ def create_tunnel(
     organization_ids: list[str],
     workspace_ids: list[str],
 ) -> str:
-    if not organization_ids and not workspace_ids:
-        raise ValueError("At least one Organization ID or Workspace ID is required to create a tunnel.")
+    if not workspace_ids:
+        raise ValueError("A target ChatGPT Workspace ID is required for automatic tunnel creation. Organization IDs are optional additional scope.")
 
     args = [
         "admin",
