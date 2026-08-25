@@ -8,6 +8,7 @@ from pathlib import Path
 from bridge.activity import clear_activity_logs, format_local_time
 from bridge.constants import CONFIG_PATH, PROFILE_ROOT, ROOT, SECRETS_PATH, WORKERS
 from bridge.credentials import CredentialStore
+import bridge.activity as activity
 from bridge.help_text import HELP_TEXT
 
 
@@ -64,6 +65,40 @@ def test_activity_helpers() -> None:
         root.rmdir()
 
 
+def test_retry_noise_filter() -> None:
+    original_root = activity.ACTIVITY_ROOT
+    root = Path(tempfile.mkdtemp(prefix="rex-activity-retry-smoke-"))
+    activity.ACTIVITY_ROOT = root
+    try:
+        activity.append_event("serena", {"event": "session_start", "status": "session"})
+        activity.append_event("serena", {
+            "event": "task_started", "task_id": "retry-1", "tool": "health",
+            "status": "running", "started_at": "2026-08-25T12:00:00+00:00"
+        })
+        activity.append_event("serena", {
+            "event": "task_finished", "task_id": "retry-1", "tool": "health",
+            "status": "failed", "started_at": "2026-08-25T12:00:00+00:00",
+            "finished_at": "2026-08-25T12:00:00.010+00:00", "duration_ms": 10,
+            "error": '{"code": -32602, "message": "Invalid request parameters", "data": ""}'
+        })
+        activity.append_event("serena", {
+            "event": "task_started", "task_id": "retry-2", "tool": "health",
+            "status": "running", "started_at": "2026-08-25T12:00:01+00:00"
+        })
+        activity.append_event("serena", {
+            "event": "task_finished", "task_id": "retry-2", "tool": "health",
+            "status": "success", "started_at": "2026-08-25T12:00:01+00:00",
+            "finished_at": "2026-08-25T12:00:01.050+00:00", "duration_ms": 50, "error": None
+        })
+        snap = activity.snapshot("serena")
+        assert snap.session_total == 1 and snap.session_success == 1 and snap.session_failed == 0
+        assert [task.task_id for task in snap.tasks] == ["retry-2"]
+    finally:
+        activity.ACTIVITY_ROOT = original_root
+        import shutil
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def main() -> None:
     assert [worker.label for worker in WORKERS] == [
         "Serena (Code/Repo)",
@@ -89,6 +124,7 @@ def main() -> None:
     assert "format_local_time" in gui_text
     json.loads((ROOT / "versions.json").read_text(encoding="utf-8"))
     test_dpapi()
+    test_retry_noise_filter()
     test_activity_helpers()
     scan_repository()
     print("BRIDGE_APP_SMOKE_OK")

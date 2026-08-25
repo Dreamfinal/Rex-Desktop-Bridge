@@ -118,8 +118,50 @@ def _tail_json(path: Path, limit: int = 4000) -> list[dict[str, Any]]:
     return result
 
 
+def _event_time(event: dict[str, Any]) -> datetime | None:
+    value = str(event.get("finished_at") or event.get("timestamp") or "")
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
+def _suppressed_retry_task_ids(events: Iterable[dict[str, Any]], retry_window_seconds: float = 5.0) -> set[str]:
+    pending: dict[str, list[tuple[str, datetime]]] = {}
+    suppressed: set[str] = set()
+    for event in events:
+        if event.get("event") != "task_finished":
+            continue
+        tool = str(event.get("tool", "unknown"))
+        status = str(event.get("status", "failed"))
+        when = _event_time(event)
+        if when is None:
+            continue
+        error = str(event.get("error") or "")
+        if status == "failed" and '"code": -32602' in error and "Invalid request parameters" in error:
+            task_id = str(event.get("task_id", ""))
+            if task_id:
+                pending.setdefault(tool, []).append((task_id, when))
+            continue
+        if status != "success" or tool not in pending:
+            continue
+        survivors: list[tuple[str, datetime]] = []
+        for task_id, failed_at in pending[tool]:
+            age = (when - failed_at).total_seconds()
+            if 0 <= age <= retry_window_seconds:
+                suppressed.add(task_id)
+            elif age < 0:
+                survivors.append((task_id, failed_at))
+        pending[tool] = survivors
+    return suppressed
+
+
 def snapshot(worker_key: str, task_limit: int = 40) -> ActivitySnapshot:
     events = _tail_json(activity_path(worker_key))
+    suppressed_retry_ids = _suppressed_retry_task_ids(events)
     session_index = 0
     for index, event in enumerate(events):
         if event.get("event") == "session_start":
@@ -135,6 +177,8 @@ def snapshot(worker_key: str, task_limit: int = 40) -> ActivitySnapshot:
         nonlocal all_total, all_success, all_failed, session_total, session_success, session_failed
         for event in items:
             if event.get("event") != "task_finished":
+                continue
+            if str(event.get("task_id", "")) in suppressed_retry_ids:
                 continue
             status = str(event.get("status", "failed"))
             if session:
@@ -158,7 +202,7 @@ def snapshot(worker_key: str, task_limit: int = 40) -> ActivitySnapshot:
         if kind not in {"task_started", "task_finished"}:
             continue
         task_id = str(event.get("task_id", ""))
-        if not task_id:
+        if not task_id or task_id in suppressed_retry_ids:
             continue
         if task_id not in states:
             states[task_id] = {

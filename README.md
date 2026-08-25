@@ -20,7 +20,8 @@ Each worker has its own panel with:
 - a `Current:` line showing the active tool, or the last completed tool when idle;
 - yellow `RUNNING`, green `SUCCESS`, and red `FAILED` task state;
 - timestamps rendered in the Windows user's local timezone;
-- per-task duration.
+- per-task duration;
+- automatic suppression of recovered `-32602 Invalid request parameters` adapter retries from operational failure counters while preserving raw JSONL trace data.
 
 The top of the GUI manages:
 

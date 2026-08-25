@@ -12,7 +12,7 @@ Recommended local checkout:
 
 ## Product version
 
-Prototype: `0.1.1`
+Prototype: `0.1.2`
 
 The code baseline was carried forward from the tested `RDC_Serena_Modify` recovery stack at commit `e2c344f`, then converted into a distribution-safe product repository. No user-specific Tunnel IDs, API keys, generated tunnel profiles, or runtime state are part of this repository.
 
@@ -55,6 +55,7 @@ Each tunnel is an independent foreground process tree. The GUI prototype opens o
 - Per-worker live task events: current/last tool, running, success/failure, duration.
 - Task timestamps render in the Windows user's local timezone while durable logs remain UTC.
 - Per-worker session/all-time usage counters.
+- Adapter retry noise (`-32602 Invalid request parameters`) is excluded from operational Failed counters only when the same tool succeeds within 5 seconds; unrecovered validation errors remain real failures.
 - `Clear Logs` removes all Bridge activity history without deleting configuration, keys, Tunnel IDs, or profiles.
 - RDC embedded MCP UI previews are suppressed so ChatGPT stays text/tool focused and Rex Desktop Bridge remains the only control-center GUI.
 - The Desktop shortcut launches the Tk GUI directly with `pythonw.exe`, avoiding a separate bootstrap-console taskbar icon.
@@ -116,4 +117,4 @@ Prototype code and local smoke gates are complete. Stable release still requires
 5. stop one live tunnel and confirm the other two remain reachable;
 6. close the GUI and confirm all GUI-owned terminal/tunnel process trees terminate.
 
-Until those live gates pass, version `0.1.1` remains a locally verified prototype rather than a stable release.
+Until those live gates pass, version `0.1.2` remains a locally verified prototype rather than a stable release.
