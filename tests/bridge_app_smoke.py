@@ -59,6 +59,10 @@ def main() -> None:
     assert "Runtime API Key" in HELP_TEXT
     assert "Admin API Key" in HELP_TEXT
     assert "Tunnel ID" in HELP_TEXT
+    serena_launcher = (ROOT / "serena" / "start-serena-mcp.cmd").read_text(encoding="utf-8")
+    assert "--enable-web-dashboard false" in serena_launcher
+    assert "--enable-gui-log-window false" in serena_launcher
+    assert "--open-web-dashboard false" in serena_launcher
     json.loads((ROOT / "versions.json").read_text(encoding="utf-8"))
     test_dpapi()
     scan_repository()

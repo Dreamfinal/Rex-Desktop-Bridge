@@ -26,5 +26,5 @@ if errorlevel 1 (
   exit /b 1
 )
 
-uvx --from git+https://github.com/oraios/serena@7fcbca7e62555ec2287ddb2f083caee805848ea6 serena start-mcp-server --context chatgpt --project "%SERENA_PROJECT_FWD%"
+uvx --from git+https://github.com/oraios/serena@7fcbca7e62555ec2287ddb2f083caee805848ea6 serena start-mcp-server --context chatgpt --project "%SERENA_PROJECT_FWD%" --enable-web-dashboard false --enable-gui-log-window false --open-web-dashboard false
 exit /b %ERRORLEVEL%
