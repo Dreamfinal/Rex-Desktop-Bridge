@@ -1,0 +1,15 @@
+{
+  "blockedCommands": [
+    "mkfs", "format", "mount", "umount", "fdisk", "dd", "parted", "diskpart",
+    "sudo", "su", "passwd", "adduser", "useradd", "usermod", "groupadd", "chsh", "visudo",
+    "shutdown", "reboot", "halt", "poweroff", "init", "iptables", "firewall", "netsh",
+    "sfc", "bcdedit", "reg", "net", "sc", "runas", "cipher", "takeown"
+  ],
+  "defaultShell": "powershell.exe",
+  "allowedDirectories": ["__USERPROFILE__"],
+  "telemetryEnabled": false,
+  "fileWriteLineLimit": 50,
+  "fileReadLineLimit": 1000,
+  "pendingWelcomeOnboarding": false,
+  "welcomeOnboardingEligible": true
+}

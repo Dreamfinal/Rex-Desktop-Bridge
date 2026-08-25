@@ -1,0 +1,46 @@
+{
+  "repo_version": "0.1.0",
+  "bridge": {
+    "app_version": "0.1.0-prototype",
+    "profiles": {
+      "serena": "rex-serena",
+      "rdc": "rex-rdc",
+      "desktop": "rex-desktop"
+    }
+  },
+  "source_baseline": {
+    "repository": "https://github.com/Dreamfinal/RDC_Serena_Modify",
+    "commit": "e2c344f",
+    "note": "Code baseline only. User-specific tunnel IDs, keys, profiles, and runtime state are intentionally not carried into Git."
+  },
+  "serena": {
+    "upstream": "https://github.com/oraios/serena",
+    "commit": "7fcbca7e62555ec2287ddb2f083caee805848ea6",
+    "wrapper_patch_version": "2026.08.21.2"
+  },
+  "rdc": {
+    "upstream": "https://github.com/wonderwhy-er/DesktopCommanderMCP",
+    "package": "@wonderwhy-er/desktop-commander",
+    "version": "0.2.47"
+  },
+  "desktop": {
+    "worker_version": "2026.08.25.1",
+    "python_mcp_sdk": "1.29.0",
+    "mss": "10.2.0",
+    "pywinauto": "0.6.9"
+  },
+  "tunnel_client": {
+    "upstream": "https://github.com/openai/tunnel-client",
+    "version": "0.0.11",
+    "windows_amd64_asset": "tunnel-client-v0.0.11-windows-amd64.zip",
+    "windows_amd64_zip_sha256": "eb912c86c6ccde90cda805cb17009507176a656725cf86c36fabe1901a12e29b",
+    "tested_exe_sha256": "7D3C7D492CE84B52835E11865A835A8A5BCD4A669DEE84E169AA11B314DC952A"
+  },
+  "tested_on": {
+    "date": "2026-08-25",
+    "windows_host": "Windows 11",
+    "python": "3.13.13",
+    "node": "24.15.0",
+    "serena": "1.7.1.dev0"
+  }
+}

@@ -1,0 +1,35 @@
+# Local runtime state and secrets
+runtime/
+.env
+.env.*
+!.env.example
+
+# Downloaded third-party runtimes
+tools/tunnel-client/
+*.zip
+
+# Node install output
+rdc/app/node_modules/
+
+# Serena/project runtime metadata
+.serena/
+
+# Python/runtime caches
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Test/runtime output
+*.log
+*.tmp
+*.bak
+*.pid
+state/
+logs/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

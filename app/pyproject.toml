@@ -1,0 +1,9 @@
+[project]
+name = "rex-desktop-bridge-app"
+version = "0.1.0"
+description = "Windows control center for Serena, RDC, and Rex Desktop MCP tunnels"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.uv]
+package = false
