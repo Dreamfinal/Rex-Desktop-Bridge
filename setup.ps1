@@ -97,6 +97,10 @@ function Install-RdcRuntime {
     & $patcher
     if ($LASTEXITCODE -ne 0) { throw 'RDC config-dir patch failed.' }
 
+    $uiPatcher = Join-Path $RepoRoot 'rdc\patches\apply-disable-mcp-ui-patch.ps1'
+    & $uiPatcher
+    if ($LASTEXITCODE -ne 0) { throw 'RDC MCP UI suppression patch failed.' }
+
     $configDir = Join-Path $RuntimeRoot 'rdc\config'
     $configPath = Join-Path $configDir 'config.json'
     New-Item -ItemType Directory -Force -Path $configDir | Out-Null
@@ -129,13 +133,15 @@ function Install-UvProject {
 function New-BridgeShortcut {
     $desktop = [Environment]::GetFolderPath('Desktop')
     $shortcutPath = Join-Path $desktop 'Rex Desktop Bridge.lnk'
-    $launcher = Join-Path $RepoRoot 'Start-Rex-Desktop-Bridge.cmd'
+    $appDir = Join-Path $RepoRoot 'app'
+    $pythonw = Join-Path $appDir '.venv\Scripts\pythonw.exe'
+    if (-not (Test-Path $pythonw)) { throw "Bridge pythonw runtime missing: $pythonw" }
     $ws = New-Object -ComObject WScript.Shell
     $shortcut = $ws.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = "$env:SystemRoot\System32\cmd.exe"
-    $shortcut.Arguments = '/d /c ""' + $launcher + '""'
-    $shortcut.WorkingDirectory = $RepoRoot
-    $shortcut.WindowStyle = 7
+    $shortcut.TargetPath = $pythonw
+    $shortcut.Arguments = '-m bridge.gui'
+    $shortcut.WorkingDirectory = $appDir
+    $shortcut.WindowStyle = 1
     $shortcut.Description = 'Rex Desktop Bridge GUI control center. Opens three visible tunnel terminals when configured.'
     $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,167"
     $shortcut.Save()

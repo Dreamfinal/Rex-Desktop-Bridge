@@ -17,7 +17,9 @@ Each worker has its own panel with:
 - Start / Restart / Stop controls;
 - session and all-time usage counters;
 - live MCP task stream;
+- a `Current:` line showing the active tool, or the last completed tool when idle;
 - yellow `RUNNING`, green `SUCCESS`, and red `FAILED` task state;
+- timestamps rendered in the Windows user's local timezone;
 - per-task duration.
 
 The top of the GUI manages:
@@ -26,7 +28,8 @@ The top of the GUI manages:
 - Admin API Key — optional, used only to create missing tunnels automatically;
 - Organization/Workspace scope used when creating tunnels;
 - beginner Help with direct OpenAI links;
-- automatic or manual Tunnel ID setup.
+- automatic or manual Tunnel ID setup;
+- `Clear Logs`, which clears task/activity history only and preserves configuration, credentials, Tunnel IDs, and profiles.
 
 ## Distribution safety
 
@@ -66,10 +69,10 @@ cd "$env:USERPROFILE\Documents\AI_Workspace\MCP\Rex-Desktop-Bridge"
 
 1. checks/installs Git, Node.js LTS, and `uv` when needed;
 2. downloads the pinned official OpenAI `tunnel-client` and verifies SHA256;
-3. installs the pinned RDC/Desktop Commander runtime and applies the guarded config isolation patch;
+3. installs the pinned RDC/Desktop Commander runtime and applies guarded config-isolation and MCP-UI-suppression patches;
 4. installs the pinned Rex Desktop Worker Python environment;
 5. installs the lightweight Tk GUI environment;
-6. creates a **Rex Desktop Bridge** Desktop shortcut;
+6. creates a **Rex Desktop Bridge** Desktop shortcut that launches the GUI directly through `pythonw.exe` (no extra bootstrap-console taskbar icon);
 7. runs local smoke tests.
 
 Setup does **not** ask for an API key or Tunnel ID. Those are per-user values and are handled by the GUI after setup.
@@ -132,7 +135,7 @@ The Bridge wraps each local MCP worker with a transparent stdio proxy. It observ
 - duration;
 - short error summary when needed.
 
-Tool arguments and API credentials are not intentionally logged by the activity layer.
+Tool arguments and API credentials are not intentionally logged by the activity layer. The GUI can clear all activity history without touching configuration or secrets.
 
 ## Security model
 

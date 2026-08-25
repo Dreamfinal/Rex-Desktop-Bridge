@@ -35,6 +35,7 @@ Write-Host '=== Smoke: syntax / distribution safety ===' -ForegroundColor Cyan
 Assert-PowerShellSyntax (Join-Path $RepoRoot 'setup.ps1')
 Assert-PowerShellSyntax (Join-Path $RepoRoot 'secure-tunnel-supervisor.ps1')
 Assert-PowerShellSyntax (Join-Path $RepoRoot 'rdc\patches\apply-config-dir-patch.ps1')
+Assert-PowerShellSyntax (Join-Path $RepoRoot 'rdc\patches\apply-disable-mcp-ui-patch.ps1')
 if (-not (Test-Path (Join-Path $RepoRoot 'desktop\uv.lock'))) { throw 'Desktop Worker uv.lock is missing.' }
 if (-not (Test-Path (Join-Path $RepoRoot 'app\uv.lock'))) { throw 'Bridge GUI uv.lock is missing.' }
 [void](Get-Content (Join-Path $RepoRoot 'versions.json') -Raw | ConvertFrom-Json)
@@ -48,7 +49,10 @@ if ($LASTEXITCODE -ne 0) { throw 'Tunnel provisioning interface smoke failed.' }
 
 $patcher = Join-Path $RepoRoot 'rdc\patches\apply-config-dir-patch.ps1'
 & $patcher -CheckOnly
-if ($LASTEXITCODE -ne 0) { throw 'RDC patch validation failed.' }
+if ($LASTEXITCODE -ne 0) { throw 'RDC config patch validation failed.' }
+$uiPatcher = Join-Path $RepoRoot 'rdc\patches\apply-disable-mcp-ui-patch.ps1'
+& $uiPatcher -CheckOnly
+if ($LASTEXITCODE -ne 0) { throw 'RDC MCP UI patch validation failed.' }
 
 $configPath = Join-Path $env:LOCALAPPDATA 'Rex-Desktop-Bridge\rdc\config\config.json'
 if (-not (Test-Path $configPath)) { throw "RDC runtime config missing: $configPath. Run setup.ps1 first." }

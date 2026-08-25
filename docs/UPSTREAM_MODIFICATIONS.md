@@ -66,21 +66,14 @@ The wrapper also adds a `health` tool and prevents recursive monkey-patching of 
 
 RDC uses Desktop Commander's normal local stdio MCP entry, not Desktop Commander's remote-device authentication mode.
 
-### Guarded upstream file patch
+### Guarded upstream file patches
 
-Only the upstream config-directory line is patched after `npm ci`:
+Two small fail-closed patches are applied after `npm ci`:
 
-File:
+1. `rdc/patches/apply-config-dir-patch.ps1` patches `dist/config.js` so `DESKTOP_COMMANDER_CONFIG_DIR` selects the Bridge-specific runtime config directory.
+2. `rdc/patches/apply-disable-mcp-ui-patch.ps1` patches `dist/server.js` so RDC tools do not advertise embedded MCP UI/output-template metadata. This keeps ChatGPT conversations text/tool focused and leaves Rex Desktop Bridge as the only control-center GUI. The tools themselves, including `get_config`, remain available.
 
-`rdc/app/node_modules/@wonderwhy-er/desktop-commander/dist/config.js`
-
-Purpose: allow `DESKTOP_COMMANDER_CONFIG_DIR` to select a Bridge-specific config directory outside the upstream default.
-
-The patch is applied only by:
-
-`rdc/patches/apply-config-dir-patch.ps1`
-
-The patcher is fail-closed: an unexpected upstream baseline must be manually rebased instead of guessed.
+Both patchers verify an exact pinned upstream baseline and fail closed if Desktop Commander changes unexpectedly.
 
 ### Product runtime config
 

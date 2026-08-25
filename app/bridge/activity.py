@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 import threading
+import time
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -17,7 +17,21 @@ _LOCK = threading.Lock()
 
 
 def utc_now() -> str:
+    """Return an offset-aware UTC timestamp for durable activity records."""
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+
+
+def format_local_time(value: str) -> str:
+    """Render an ISO timestamp in the Windows user's current local timezone."""
+    if not value:
+        return ""
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone().strftime("%H:%M:%S")
+    except ValueError:
+        return value[11:19] if len(value) >= 19 else value
 
 
 def activity_path(worker_key: str) -> Path:
@@ -40,6 +54,23 @@ def append_event(worker_key: str, event: dict[str, Any]) -> None:
 def reset_session_markers() -> None:
     for worker in WORKERS:
         append_event(worker.key, {"event": "session_start", "status": "session", "pid": os.getpid()})
+
+
+def clear_activity_logs(root: Path = ACTIVITY_ROOT) -> None:
+    """Delete Bridge activity/history logs while preserving every config and credential."""
+    root.mkdir(parents=True, exist_ok=True)
+    with _LOCK:
+        for path in root.iterdir():
+            if not path.is_file():
+                continue
+            for attempt in range(5):
+                try:
+                    path.unlink(missing_ok=True)
+                    break
+                except PermissionError:
+                    if attempt == 4:
+                        raise
+                    time.sleep(0.05)
 
 
 @dataclass(frozen=True)

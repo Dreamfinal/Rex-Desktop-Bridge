@@ -12,7 +12,7 @@ Recommended local checkout:
 
 ## Product version
 
-Prototype: `0.1.0`
+Prototype: `0.1.1`
 
 The code baseline was carried forward from the tested `RDC_Serena_Modify` recovery stack at commit `e2c344f`, then converted into a distribution-safe product repository. No user-specific Tunnel IDs, API keys, generated tunnel profiles, or runtime state are part of this repository.
 
@@ -52,8 +52,12 @@ Each tunnel is an independent foreground process tree. The GUI prototype opens o
 - Runtime key passed to tunnel processes only through child environments.
 - Admin key passed to tunnel-management subprocesses only through environment, never command-line arguments.
 - Transparent MCP activity proxy around each worker.
-- Per-worker live task events: running, success/failure, duration.
+- Per-worker live task events: current/last tool, running, success/failure, duration.
+- Task timestamps render in the Windows user's local timezone while durable logs remain UTC.
 - Per-worker session/all-time usage counters.
+- `Clear Logs` removes all Bridge activity history without deleting configuration, keys, Tunnel IDs, or profiles.
+- RDC embedded MCP UI previews are suppressed so ChatGPT stays text/tool focused and Rex Desktop Bridge remains the only control-center GUI.
+- The Desktop shortcut launches the Tk GUI directly with `pythonw.exe`, avoiding a separate bootstrap-console taskbar icon.
 - Setup no longer requires API keys or Tunnel IDs; first-run credentials/tunnel setup happens in the GUI.
 
 ## Local verification completed
@@ -69,7 +73,8 @@ On Windows 11 on 2026-08-25:
 - distribution source scan passed with no real-looking Tunnel ID or secret-like API key in source;
 - automatic tunnel provisioning interface smoke confirmed the Admin key is passed via environment, not command-line arguments;
 - real `tunnel-client admin tunnels create` parser accepted the provisioning flag shape and stopped only because no Admin key was supplied to that parser check;
-- RDC observed MCP smoke passed;
+- RDC observed MCP smoke passed with embedded MCP UI metadata absent;
+- GUI activity helper smoke passed for local-time rendering and log clearing;
 - Serena observed MCP wrapper smoke passed;
 - Rex Desktop observed MCP smoke passed with real PNG screenshot content;
 - MCP proxy task-start/task-finish telemetry passed;
@@ -111,4 +116,4 @@ Prototype code and local smoke gates are complete. Stable release still requires
 5. stop one live tunnel and confirm the other two remain reachable;
 6. close the GUI and confirm all GUI-owned terminal/tunnel process trees terminate.
 
-Until those live gates pass, version `0.1.0` remains a locally verified prototype rather than a stable release.
+Until those live gates pass, version `0.1.1` remains a locally verified prototype rather than a stable release.

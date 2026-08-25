@@ -24,6 +24,11 @@ try {
   const names = listed.tools.map((tool) => tool.name);
   if (!names.includes('get_config')) throw new Error('get_config not exposed');
   if (!names.includes('start_process')) throw new Error('start_process not exposed');
+  const uiTools = listed.tools.filter((tool) => {
+    const meta = tool._meta ?? {};
+    return Boolean(meta['ui/resourceUri'] || meta['openai/outputTemplate'] || meta.ui);
+  });
+  if (uiTools.length) throw new Error(`RDC MCP UI previews still exposed: ${uiTools.map((tool) => tool.name).join(', ')}`);
 
   const result = await client.callTool({ name: 'get_config', arguments: {} });
   const text = result.content?.map((c) => c.type === 'text' ? c.text : '').join('\n') ?? '';

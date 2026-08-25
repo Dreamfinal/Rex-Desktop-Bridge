@@ -7,7 +7,7 @@ import webbrowser
 from tkinter import messagebox, simpledialog, ttk
 from typing import Callable
 
-from .activity import snapshot
+from .activity import clear_activity_logs, format_local_time, snapshot
 from .config import BridgeConfig
 from .constants import (
     APP_NAME,
@@ -169,10 +169,12 @@ class WorkerPanel(ttk.LabelFrame):
         self.tunnel_text = ttk.Label(self, text="Tunnel: checking...")
         self.tunnel_text.grid(row=1, column=0, columnspan=3, sticky="w", pady=(4, 2))
         self.count_text = ttk.Label(self, text="Session 0 | Success 0 | Failed 0 | All-time 0")
-        self.count_text.grid(row=2, column=0, columnspan=3, sticky="w", pady=(0, 6))
+        self.count_text.grid(row=2, column=0, columnspan=3, sticky="w", pady=(0, 4))
+        self.current_text = tk.Label(self, text="Current: idle", fg=STATUS_COLORS["gray"], anchor="w")
+        self.current_text.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(0, 6))
 
         controls = ttk.Frame(self)
-        controls.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(0, 8))
+        controls.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(0, 8))
         ttk.Button(controls, text="Start", command=lambda: app.start_worker(worker_key)).pack(side="left")
         ttk.Button(controls, text="Restart", command=lambda: app.restart_worker(worker_key)).pack(side="left", padx=(4, 0))
         ttk.Button(controls, text="Stop", command=lambda: app.stop_worker(worker_key)).pack(side="left", padx=(4, 0))
@@ -187,13 +189,13 @@ class WorkerPanel(ttk.LabelFrame):
         ):
             self.tree.heading(name, text=label)
             self.tree.column(name, width=width, anchor="w")
-        self.tree.grid(row=4, column=0, columnspan=3, sticky="nsew")
+        self.tree.grid(row=5, column=0, columnspan=3, sticky="nsew")
         self.tree.tag_configure("running", foreground=STATUS_COLORS["yellow"])
         self.tree.tag_configure("success", foreground=STATUS_COLORS["green"])
         self.tree.tag_configure("failed", foreground=STATUS_COLORS["red"])
-        self.rowconfigure(4, weight=1)
+        self.rowconfigure(5, weight=1)
         self.columnconfigure(1, weight=1)
-        self._last_task_ids: tuple[str, ...] = ()
+        self._last_task_state: tuple[tuple[str, str, int | None], ...] = ()
 
     def update_status(self, state: str, detail: str, tunnel_id: str, snapshot_data) -> None:
         self.status_dot.configure(fg=STATUS_COLORS.get(state, STATUS_COLORS["gray"]))
@@ -211,16 +213,37 @@ class WorkerPanel(ttk.LabelFrame):
             )
         )
 
-        task_ids = tuple(task.task_id for task in snapshot_data.tasks)
-        if task_ids == self._last_task_ids:
+        running_tasks = [task for task in snapshot_data.tasks if task.status == "running"]
+        if running_tasks:
+            names = ", ".join(task.tool for task in running_tasks[:3])
+            suffix = "" if len(running_tasks) <= 3 else f" +{len(running_tasks) - 3}"
+            self.current_text.configure(text=f"Current: {names}{suffix} (RUNNING)", fg=STATUS_COLORS["yellow"])
+        elif snapshot_data.tasks:
+            latest = snapshot_data.tasks[0]
+            self.current_text.configure(
+                text=f"Current: idle | Last: {latest.tool} {latest.status.upper()}",
+                fg=STATUS_COLORS["gray"],
+            )
+        else:
+            self.current_text.configure(text="Current: idle", fg=STATUS_COLORS["gray"])
+
+        task_state = tuple((task.task_id, task.status, task.duration_ms) for task in snapshot_data.tasks)
+        if task_state == self._last_task_state:
             return
-        self._last_task_ids = task_ids
+        self._last_task_state = task_state
         for item in self.tree.get_children():
             self.tree.delete(item)
         for task in snapshot_data.tasks:
-            time_text = task.started_at[11:19] if len(task.started_at) >= 19 else task.started_at
+            time_text = format_local_time(task.started_at)
             duration = "" if task.duration_ms is None else str(task.duration_ms)
             self.tree.insert("", "end", values=(time_text, task.tool, task.status.upper(), duration), tags=(task.status,))
+
+    def clear_view(self) -> None:
+        self._last_task_state = ()
+        self.count_text.configure(text="Session 0 | Success 0 | Failed 0 | All-time 0")
+        self.current_text.configure(text="Current: idle", fg=STATUS_COLORS["gray"])
+        for item in self.tree.get_children():
+            self.tree.delete(item)
 
 
 class BridgeApp(tk.Tk):
@@ -235,11 +258,13 @@ class BridgeApp(tk.Tk):
         self.credentials = CredentialStore()
         self.processes = BridgeProcessManager()
         self.busy = False
+        self._poll_tick = 0
+        self._connection_cache: dict[str, tuple[str, str, bool]] = {}
 
         ensure_profiles(self.config_store)
         self._build_ui()
         self.after(400, self._first_run_assistant)
-        self.after(800, self._poll)
+        self.after(500, self._poll)
 
     def _build_ui(self) -> None:
         root = ttk.Frame(self, padding=12)
@@ -248,7 +273,7 @@ class BridgeApp(tk.Tk):
         header = ttk.Frame(root)
         header.pack(fill="x")
         ttk.Label(header, text="Rex Desktop Bridge", font=("Segoe UI", 18, "bold")).pack(side="left")
-        ttk.Label(header, text="3 independent MCP tunnels Â· foreground prototype", foreground="#555").pack(side="left", padx=(12, 0))
+        ttk.Label(header, text="3 independent MCP tunnels · foreground prototype", foreground="#555").pack(side="left", padx=(12, 0))
         ttk.Button(header, text="Beginner Help", command=self.show_help).pack(side="right")
 
         key_frame = ttk.LabelFrame(root, text="Keys & Provisioning", padding=10)
@@ -278,6 +303,7 @@ class BridgeApp(tk.Tk):
         bridge_controls.pack(fill="x", pady=(0, 8))
         ttk.Button(bridge_controls, text="Start All Configured Tunnels", command=self.start_all).pack(side="left")
         ttk.Button(bridge_controls, text="Stop All", command=self.stop_all).pack(side="left", padx=(6, 0))
+        ttk.Button(bridge_controls, text="Clear Logs", command=self.clear_logs).pack(side="left", padx=(6, 0))
         self.global_status = ttk.Label(bridge_controls, text="")
         self.global_status.pack(side="left", padx=(14, 0))
         ttk.Label(
@@ -525,6 +551,21 @@ class BridgeApp(tk.Tk):
         except Exception as exc:
             messagebox.showerror("Stop failed", str(exc), parent=self)
 
+    def clear_logs(self) -> None:
+        if not messagebox.askyesno(
+            "Clear activity logs",
+            "Clear all task/activity history for all three workers?\n\nConfiguration, API keys, Tunnel IDs, and profiles will be preserved.",
+            parent=self,
+        ):
+            return
+        try:
+            clear_activity_logs()
+            for panel in self.panels.values():
+                panel.clear_view()
+            self.global_status.configure(text="Activity logs cleared; configuration preserved.")
+        except Exception as exc:
+            messagebox.showerror("Clear logs failed", str(exc), parent=self)
+
     def _refresh_top_status(self) -> None:
         runtime_saved = self.credentials.has(RUNTIME_KEY_NAME)
         admin_saved = self.credentials.has(ADMIN_KEY_NAME)
@@ -541,26 +582,35 @@ class BridgeApp(tk.Tk):
 
     def _poll(self) -> None:
         try:
+            self._poll_tick += 1
             self._refresh_top_status()
             runtime_present = self.credentials.has(RUNTIME_KEY_NAME)
+            health_due = self._poll_tick % 4 == 1 or not self._connection_cache
             running_count = 0
             ready_count = 0
             for worker in WORKERS:
                 running = self.processes.is_running(worker.key)
                 running_count += int(running)
                 tunnel_id = self.config_store.tunnel_id(worker.key)
-                tunnel_status = probe_health(worker, running, runtime_present, tunnel_id)
-                ready_count += int(tunnel_status.ready)
+                if health_due:
+                    tunnel_status = probe_health(worker, running, runtime_present, tunnel_id)
+                    self._connection_cache[worker.key] = (
+                        tunnel_status.state, tunnel_status.detail, tunnel_status.ready
+                    )
+                state, detail, ready = self._connection_cache.get(
+                    worker.key, ("gray", "Checking...", False)
+                )
+                ready_count += int(ready)
                 data = snapshot(worker.key)
-                self.panels[worker.key].update_status(tunnel_status.state, tunnel_status.detail, tunnel_id, data)
+                self.panels[worker.key].update_status(state, detail, tunnel_id, data)
             if running_count:
-                self.global_status.configure(text=f"Terminals running: {running_count}/3 Â· Ready: {ready_count}/3")
+                self.global_status.configure(text=f"Terminals running: {running_count}/3 · Ready: {ready_count}/3")
             elif not self.busy:
                 self.global_status.configure(text="Bridge stopped")
         except Exception as exc:
             self.global_status.configure(text=f"Status refresh error: {exc}")
         finally:
-            self.after(1000, self._poll)
+            self.after(250, self._poll)
 
     def _on_close(self) -> None:
         self.stop_all()
