@@ -12,7 +12,7 @@ Recommended local checkout:
 
 ## Product version
 
-Prototype: `0.1.3`
+Prototype: `0.1.4`
 
 The code baseline was carried forward from the tested `RDC_Serena_Modify` recovery stack at commit `e2c344f`, then converted into a distribution-safe product repository. No user-specific Tunnel IDs, API keys, generated tunnel profiles, or runtime state are part of this repository.
 
@@ -117,4 +117,4 @@ Prototype code and local smoke gates are complete. Stable release still requires
 5. stop one live tunnel and confirm the other two remain reachable;
 6. close the GUI and confirm all GUI-owned terminal/tunnel process trees terminate.
 
-Until those live gates pass, version `0.1.3` remains a locally verified prototype rather than a stable release.
+Until those live gates pass, version `0.1.4` remains a locally verified prototype rather than a stable release.

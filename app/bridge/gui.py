@@ -176,7 +176,6 @@ class WorkerPanel(ttk.LabelFrame):
         controls = ttk.Frame(self)
         controls.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(0, 8))
         ttk.Button(controls, text="Start", command=lambda: app.start_worker(worker_key)).pack(side="left")
-        ttk.Button(controls, text="Restart", command=lambda: app.restart_worker(worker_key)).pack(side="left", padx=(4, 0))
         ttk.Button(controls, text="Stop", command=lambda: app.stop_worker(worker_key)).pack(side="left", padx=(4, 0))
         ttk.Button(controls, text="Show Terminal", command=lambda: app.show_terminal(worker_key)).pack(side="left", padx=(4, 0))
         ttk.Button(controls, text="Set Tunnel ID", command=lambda: app.set_tunnel_id(worker_key)).pack(side="right")

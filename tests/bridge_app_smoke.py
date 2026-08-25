@@ -129,6 +129,7 @@ def main() -> None:
     assert "Clear Logs" in gui_text
     assert "Current: idle" in gui_text
     assert "Show Terminal" in gui_text
+    assert 'text="Restart"' not in gui_text
     assert "Tunnels run headless by default" in gui_text
     processes_text = (ROOT / "app" / "bridge" / "processes.py").read_text(encoding="utf-8")
     assert "CREATE_NO_WINDOW" in processes_text

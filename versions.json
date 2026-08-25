@@ -1,7 +1,7 @@
 {
-  "repo_version": "0.1.3",
+  "repo_version": "0.1.4",
   "bridge": {
-    "app_version": "0.1.3-prototype",
+    "app_version": "0.1.4-prototype",
     "profiles": {
       "serena": "rex-serena",
       "rdc": "rex-rdc",
