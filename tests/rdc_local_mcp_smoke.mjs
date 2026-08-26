@@ -30,7 +30,22 @@ try {
   });
   if (uiTools.length) throw new Error(`RDC MCP UI previews still exposed: ${uiTools.map((tool) => tool.name).join(', ')}`);
 
+  const resources = await client.listResources();
+  const uiResources = (resources.resources ?? []).filter((resource) => String(resource.uri ?? '').startsWith('ui://desktop-commander/'));
+  if (uiResources.length) throw new Error(`RDC UI resources still exposed: ${uiResources.map((resource) => resource.uri).join(', ')}`);
+  const cachedUiRead = await client.readResource({ uri: 'ui://desktop-commander/file-preview' });
+  if ((cachedUiRead.contents ?? []).length) throw new Error('cached RDC UI resource read was not neutralized by Bridge');
+
+  const readResult = await client.callTool({
+    name: 'read_file',
+    arguments: { path: path.join(repo, 'README.md'), offset: 0, length: 3 },
+  });
+  if (readResult.structuredContent !== undefined) throw new Error('read_file still exposes structuredContent through Bridge');
+  const readMeta = readResult._meta ?? {};
+  if (readMeta['ui/resourceUri'] || readMeta['openai/outputTemplate'] || readMeta.ui) throw new Error('read_file still exposes UI result metadata');
+
   const result = await client.callTool({ name: 'get_config', arguments: {} });
+  if (result.structuredContent !== undefined) throw new Error('get_config structuredContent was not stripped by Bridge');
   const text = result.content?.map((c) => c.type === 'text' ? c.text : '').join('\n') ?? '';
   const normalizedText = text.replace(/\\\\/g, '\\');
   if (!normalizedText.includes(userHome)) throw new Error(`allowedDirectories does not include ${userHome}`);

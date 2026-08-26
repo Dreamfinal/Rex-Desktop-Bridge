@@ -10,6 +10,7 @@ from bridge.constants import CONFIG_PATH, LOG_ROOT, PROFILE_ROOT, ROOT, SECRETS_
 from bridge.credentials import CredentialStore
 import bridge.activity as activity
 from bridge.help_text import HELP_TEXT
+from bridge.mcp_proxy import _sanitize_rdc_response
 from bridge.processes import clear_tunnel_logs
 
 
@@ -104,6 +105,44 @@ def test_retry_noise_filter() -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_rdc_proxy_ui_sanitizer() -> None:
+    listed = {
+        "result": {
+            "tools": [
+                {"name": "read_file", "_meta": {"ui/resourceUri": "ui://desktop-commander/file-preview", "keep": "yes"}},
+            ]
+        }
+    }
+    _sanitize_rdc_response("tools/list", {}, listed)
+    assert listed["result"]["tools"][0]["_meta"] == {"keep": "yes"}
+
+    resources = {
+        "result": {
+            "resources": [
+                {"uri": "ui://desktop-commander/file-preview"},
+                {"uri": "file:///keep-me"},
+            ]
+        }
+    }
+    _sanitize_rdc_response("resources/list", {}, resources)
+    assert resources["result"]["resources"] == [{"uri": "file:///keep-me"}]
+
+    cached = {"result": {"contents": [{"uri": "ui://desktop-commander/file-preview", "text": "widget"}]}}
+    _sanitize_rdc_response("resources/read", {"uri": "ui://desktop-commander/file-preview"}, cached)
+    assert cached["result"] == {"contents": []}
+
+    call = {
+        "result": {
+            "content": [{"type": "text", "text": "plain result"}],
+            "structuredContent": {"fileName": "x"},
+            "_meta": {"openai/outputTemplate": "ui://desktop-commander/file-preview"},
+        }
+    }
+    _sanitize_rdc_response("tools/call", {}, call)
+    assert "structuredContent" not in call["result"]
+    assert "_meta" not in call["result"]
+
+
 def main() -> None:
     assert [worker.label for worker in WORKERS] == [
         "Serena (Code/Repo)",
@@ -140,6 +179,7 @@ def main() -> None:
     test_dpapi()
     test_retry_noise_filter()
     test_activity_helpers()
+    test_rdc_proxy_ui_sanitizer()
     scan_repository()
     print("BRIDGE_APP_SMOKE_OK")
 

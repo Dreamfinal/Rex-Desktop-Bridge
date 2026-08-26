@@ -30,17 +30,79 @@ def _parse_message(line: bytes) -> dict[str, Any] | None:
     return message if isinstance(message, dict) else None
 
 
+_RDC_UI_RESOURCE_PREFIX = "ui://desktop-commander/"
+_RDC_UI_META_KEYS = {
+    "ui/resourceUri",
+    "openai/outputTemplate",
+    "openai/widgetAccessible",
+    "ui",
+}
+
+
+def _strip_rdc_ui_meta(container: dict[str, Any]) -> None:
+    meta = container.get("_meta")
+    if not isinstance(meta, dict):
+        return
+    for key in _RDC_UI_META_KEYS:
+        meta.pop(key, None)
+    if not meta:
+        container.pop("_meta", None)
+
+
+def _is_rdc_ui_resource(item: Any) -> bool:
+    if not isinstance(item, dict):
+        return False
+    uri = item.get("uri") or item.get("uriTemplate")
+    return isinstance(uri, str) and uri.startswith(_RDC_UI_RESOURCE_PREFIX)
+
+
+def _sanitize_rdc_response(method: str, params: dict[str, Any], message: dict[str, Any]) -> dict[str, Any]:
+    """Remove Desktop Commander MCP-App surfaces at the Bridge boundary."""
+    result = message.get("result")
+    if not isinstance(result, dict):
+        return message
+
+    if method == "tools/list":
+        tools = result.get("tools")
+        if isinstance(tools, list):
+            for tool in tools:
+                if isinstance(tool, dict):
+                    _strip_rdc_ui_meta(tool)
+    elif method == "resources/list":
+        resources = result.get("resources")
+        if isinstance(resources, list):
+            result["resources"] = [item for item in resources if not _is_rdc_ui_resource(item)]
+    elif method == "resources/templates/list":
+        templates = result.get("resourceTemplates")
+        if isinstance(templates, list):
+            result["resourceTemplates"] = [item for item in templates if not _is_rdc_ui_resource(item)]
+    elif method == "resources/read":
+        uri = params.get("uri")
+        if isinstance(uri, str) and uri.startswith(_RDC_UI_RESOURCE_PREFIX):
+            message["result"] = {"contents": []}
+    elif method == "tools/call":
+        # Normal model-facing RDC calls always include standard MCP content.
+        # Strip UI-only channels so cached host descriptors receive no widget payload.
+        if result.get("content"):
+            result.pop("structuredContent", None)
+        _strip_rdc_ui_meta(result)
+
+    return message
+
+
 class McpActivityProxy:
     """Transparent newline-delimited MCP stdio proxy with per-worker task telemetry.
 
-    The proxy never writes telemetry to stdout. Stdout remains byte-for-byte MCP
-    traffic so tunnel-client sees the same protocol it would see from the worker.
+    The proxy never writes telemetry to stdout. Serena/Desktop traffic is forwarded
+    unchanged; RDC responses are protocol-preservingly sanitized to remove embedded MCP-App
+    UI surfaces before tunnel-client/ChatGPT receives them.
     """
 
     def __init__(self, worker_key: str, launcher: Path) -> None:
         self.worker_key = worker_key
         self.launcher = launcher
         self.pending: dict[str, dict[str, Any]] = {}
+        self.request_context: dict[str, tuple[str, dict[str, Any]]] = {}
         self.pending_lock = threading.Lock()
         self.instance = uuid.uuid4().hex[:10]
         self.sequence = 0
@@ -49,12 +111,18 @@ class McpActivityProxy:
         return ["cmd.exe", "/d", "/c", str(self.launcher)]
 
     def _record_request(self, message: dict[str, Any]) -> None:
-        if message.get("method") != "tools/call" or "id" not in message:
+        if "id" not in message:
             return
-        params = message.get("params")
-        tool = "unknown"
-        if isinstance(params, dict):
-            tool = str(params.get("name") or "unknown")
+        method = str(message.get("method") or "")
+        raw_params = message.get("params")
+        params = raw_params if isinstance(raw_params, dict) else {}
+        key = _request_key(message["id"])
+        with self.pending_lock:
+            self.request_context[key] = (method, params)
+
+        if method != "tools/call":
+            return
+        tool = str(params.get("name") or "unknown")
         self.sequence += 1
         task_id = f"{self.worker_key}-{self.instance}-{self.sequence}"
         started_at = utc_now()
@@ -65,7 +133,7 @@ class McpActivityProxy:
             "started_monotonic": time.monotonic(),
         }
         with self.pending_lock:
-            self.pending[_request_key(message["id"])] = entry
+            self.pending[key] = entry
         append_event(
             self.worker_key,
             {
@@ -77,6 +145,13 @@ class McpActivityProxy:
                 "proxy_pid": os.getpid(),
             },
         )
+
+    def _take_request_context(self, message: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+        if "id" not in message:
+            return "", {}
+        key = _request_key(message["id"])
+        with self.pending_lock:
+            return self.request_context.pop(key, ("", {}))
 
     def _record_response(self, message: dict[str, Any]) -> None:
         if "id" not in message:
@@ -121,7 +196,11 @@ class McpActivityProxy:
         for line in iter(child.stdout.readline, b""):
             message = _parse_message(line)
             if message is not None:
+                method, params = self._take_request_context(message)
                 self._record_response(message)
+                if self.worker_key == "rdc" and method:
+                    message = _sanitize_rdc_response(method, params, message)
+                    line = (json.dumps(message, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
             out.write(line)
             out.flush()
 

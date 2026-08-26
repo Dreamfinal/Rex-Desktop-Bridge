@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 APP_NAME = "Rex Desktop Bridge"
-APP_VERSION = "0.1.4-prototype"
+APP_VERSION = "0.1.5-prototype"
 RUNTIME_DIR_NAME = "Rex-Desktop-Bridge"
 CONTROL_PLANE_BASE_URL = "https://api.openai.com"
 OPENAI_API_KEYS_URL = "https://platform.openai.com/settings/organization/api-keys"

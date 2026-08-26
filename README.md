@@ -70,7 +70,7 @@ cd "$env:USERPROFILE\Documents\AI_Workspace\MCP\Rex-Desktop-Bridge"
 
 1. checks/installs Git, Node.js LTS, and `uv` when needed;
 2. downloads the pinned official OpenAI `tunnel-client` and verifies SHA256;
-3. installs the pinned RDC/Desktop Commander runtime and applies guarded config-isolation and MCP-UI-suppression patches;
+3. installs the pinned RDC/Desktop Commander runtime and applies guarded config-isolation/MCP-UI patches; the Bridge proxy also strips RDC UI resources and UI-only result channels as a defense-in-depth boundary;
 4. installs the pinned Rex Desktop Worker Python environment;
 5. installs the lightweight Tk GUI environment;
 6. creates a **Rex Desktop Bridge** Desktop shortcut that resolves the underlying base `pythonw.exe` instead of the uv virtualenv shim (no extra bootstrap-console taskbar icon);
@@ -127,7 +127,7 @@ This is **capability isolation**, not three identical mirrors. If one tunnel is 
 
 ## Task telemetry
 
-The Bridge wraps each local MCP worker with a transparent stdio proxy. It observes `tools/call` requests/responses and writes only local task metadata:
+The Bridge wraps each local MCP worker with a protocol-preserving stdio proxy. It observes `tools/call` requests/responses for local telemetry; for RDC only, the proxy also removes Desktop Commander MCP-App UI descriptors/resources so ChatGPT receives normal tool/text results instead of embedded preview/config widgets:
 
 - worker;
 - tool name;

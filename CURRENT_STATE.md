@@ -12,7 +12,7 @@ Recommended local checkout:
 
 ## Product version
 
-Prototype: `0.1.4`
+Prototype: `0.1.5`
 
 The code baseline was carried forward from the tested `RDC_Serena_Modify` recovery stack at commit `e2c344f`, then converted into a distribution-safe product repository. No user-specific Tunnel IDs, API keys, generated tunnel profiles, or runtime state are part of this repository.
 
@@ -57,7 +57,7 @@ Each tunnel is an independent GUI-owned headless process tree. Terminal log view
 - Per-worker session/all-time usage counters.
 - Adapter retry noise (`-32602 Invalid request parameters`) is excluded from operational Failed counters only when the same tool succeeds within 5 seconds; unrecovered validation errors remain real failures.
 - `Clear Logs` removes all Bridge activity history without deleting configuration, keys, Tunnel IDs, or profiles.
-- RDC embedded MCP UI previews are suppressed so ChatGPT stays text/tool focused and Rex Desktop Bridge remains the only control-center GUI.
+- RDC embedded MCP UI previews are suppressed at two layers: the pinned upstream patch removes tool UI metadata, and the Bridge proxy strips Desktop Commander UI resources/structured UI payloads before they reach ChatGPT.
 - The Desktop shortcut launches the Tk GUI directly with `pythonw.exe`, avoiding a separate bootstrap-console taskbar icon.
 - Setup no longer requires API keys or Tunnel IDs; first-run credentials/tunnel setup happens in the GUI.
 
@@ -74,7 +74,7 @@ On Windows 11 on 2026-08-25:
 - distribution source scan passed with no real-looking Tunnel ID or secret-like API key in source;
 - automatic tunnel provisioning interface smoke confirmed the Admin key is passed via environment, not command-line arguments;
 - real `tunnel-client admin tunnels create` parser accepted the provisioning flag shape and stopped only because no Admin key was supplied to that parser check;
-- RDC observed MCP smoke passed with embedded MCP UI metadata absent;
+- RDC observed MCP smoke passed with tool UI metadata absent, `ui://desktop-commander/*` resources hidden, cached UI resource reads neutralized, and model-facing structured UI payloads stripped;
 - GUI activity helper smoke passed for local-time rendering and log clearing;
 - Serena observed MCP wrapper smoke passed;
 - Rex Desktop observed MCP smoke passed with real PNG screenshot content;
@@ -117,4 +117,4 @@ Prototype code and local smoke gates are complete. Stable release still requires
 5. stop one live tunnel and confirm the other two remain reachable;
 6. close the GUI and confirm all GUI-owned terminal/tunnel process trees terminate.
 
-Until those live gates pass, version `0.1.4` remains a locally verified prototype rather than a stable release.
+Until those live gates pass, version `0.1.5` remains a locally verified prototype rather than a stable release.

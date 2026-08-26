@@ -73,7 +73,7 @@ Two small fail-closed patches are applied after `npm ci`:
 1. `rdc/patches/apply-config-dir-patch.ps1` patches `dist/config.js` so `DESKTOP_COMMANDER_CONFIG_DIR` selects the Bridge-specific runtime config directory.
 2. `rdc/patches/apply-disable-mcp-ui-patch.ps1` patches `dist/server.js` so RDC tools do not advertise embedded MCP UI/output-template metadata. This keeps ChatGPT conversations text/tool focused and leaves Rex Desktop Bridge as the only control-center GUI. The tools themselves, including `get_config`, remain available.
 
-Both patchers verify an exact pinned upstream baseline and fail closed if Desktop Commander changes unexpectedly.
+Both patchers verify an exact pinned upstream baseline and fail closed if Desktop Commander changes unexpectedly. In addition, `app/bridge/mcp_proxy.py` enforces a product-layer defense-in-depth boundary: RDC `tools/list` UI metadata is stripped, `ui://desktop-commander/*` resources are hidden/neutralized, and UI-only structured result channels are removed before ChatGPT receives them.
 
 ### Product runtime config
 
@@ -166,7 +166,7 @@ New product code under `app/` provides:
 - three GUI-owned headless tunnel supervisors with optional live-log terminal viewers;
 - tunnel health display;
 - per-worker activity counters and task lists;
-- transparent MCP activity proxy.
+- protocol-preserving MCP activity proxy with an RDC MCP-App UI sanitizer.
 
 The app is a supervisor/control center, not a source-code monolith: Serena, RDC, and Desktop remain independent workers.
 
@@ -176,6 +176,6 @@ The app is a supervisor/control center, not a source-code monolith: Serena, RDC,
 
 `secure-tunnel-supervisor.ps1` retains Windows Job Object `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` protection around each tunnel-client/MCP child tree.
 
-The GUI prototype starts a separate visible PowerShell supervisor terminal per worker and tracks the supervisors it owns. Closing the GUI stops those terminal/process trees.
+The GUI owns three headless supervisor process trees by default. Optional `Show Terminal` viewers tail local logs on demand. Closing the GUI stops its supervisor trees and any viewers it opened.
 
 No Windows Service, Task Scheduler autostart, hidden tray daemon, or background resurrection is part of the prototype.
