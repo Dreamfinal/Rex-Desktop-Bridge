@@ -8,6 +8,14 @@ It combines three independent MCP capabilities behind one user-facing GUI while 
 - `RDC (OS/CLI)`
 - `Rex Desktop (GUI + Vision)`
 
+## Optional Staff binding
+
+This Project may start in the runtime's `BASE_MODEL` without loading permanent Staff `SOUL.md`, `MEMORY.md`, or `SKILLS.md`. When Staff context is useful or a named Staff authority is required, `/a <staff>` (or an equivalent natural-language request) overlays that permanent Staff **without changing this Project Repo or working directory**.
+
+Resolve the canonical Team Repo from `AGENT_TEAM_HOME` when configured. In the standard owner workspace layout, fall back to `../../Agent-Team` from `Documents/AI_Workspace/Projects/<project>`. Then read `BOOTSTRAP.md` and execute `skills/staff-load/SKILL.md` from that Team Repo.
+
+`/a` changes `ACTIVE_ACTOR` only and preserves `ACTIVE_PROJECT` plus `ACTIVE_EXECUTION_MODE`. `/p` changes Project only. Do not search this Project Repo for Staff identity as the source of truth, and never copy permanent Staff identity/memory into the Project Repo.
+
 ## Read first
 
 1. `CURRENT_STATE.md`
